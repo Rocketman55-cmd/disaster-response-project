@@ -26,17 +26,17 @@ def clean_data(df):
     Return:
         dataFrame
     '''
-    # create a dataframe of the 36 individual category columns
+    # create a dataframe of the individual columns in category
     categories = df['categories'].str.split(';', expand = True)
     row = categories[0:1]
     category_colnames = row.applymap(lambda x: x[:-2]).iloc[0, :].tolist()
     categories.columns = category_colnames
-    # loop through category columns
+    # loop through the columns in category 
     for column in categories:
         categories[column] = categories[column].str[-1]
         categories[column] = categories[column].astype(int)
     categories = (categories > 0).astype(int)
-    # drop the original categories column from `df`
+    # drop the original categories column from df
     df.drop('categories', axis = 1, inplace = True)
     df = pd.concat([df, categories], axis = 1)
     # drop duplicates

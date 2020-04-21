@@ -27,12 +27,12 @@ def load_data(database_filepath):
     Output: Returns the features X & target y along with target columns
     '''
     # load data from database
-    engine = create_engine(f'sqlite:///{database_filepath}')
-    df = pd.read_sql_table('messages_disaster', con = engine)
+    engine = create_engine('sqlite:///' + database_filepath)
+    df = pd.read_sql_table('messages_disaster',engine)
     X = df['message']
-    y = df.drop(['message', 'genre', 'id', 'original'], axis = 1)
-    category_names = y.columns
-    return X, y, category_names
+    Y = df.iloc[:,4:]
+    category_names = Y.columns
+    return X, Y, category_names
 
 
 def tokenize(text):
@@ -64,12 +64,12 @@ def build_model():
     '''
     # set pipeline
     pipeline = Pipeline([
-    ('vect', CountVectorizer(tokenizer=tokenize)),
+    ('vect', CountVectorizer(tokenizer = tokenize)),
     ('tfidf', TfidfTransformer()),
     ('clf', MultiOutputClassifier(RandomForestClassifier(class_weight = 'balanced')))
     ])
     # set parameters for grid search
-    parameters = parameters =  {'tfidf__use_idf': (True, False), 
+    parameters = {'tfidf__use_idf': (True, False), 
               'clf__estimator__n_estimators': [20, 50], 
               'clf__estimator__min_samples_split': [2, 4]} 
     # set grid search
@@ -79,21 +79,21 @@ def build_model():
 
 def evaluate_model(model, X_test, Y_test, category_names):
     '''
-    Function to evaluate a model and return the classificatio and accurancy score.
-    Inputs: Model, X_test, y_test, Catgegory_names
-    Outputs: Prints the Classification report & Accuracy Score
+    Function to evaluate a model and return the classification and accuracy score.
+    Inputs: Model, X_test, Y_test, category_names
+    Outputs: The classification report & Accuracy Score
     '''
     # predict categories of messages
-    y_pred = model.predict(X_test)
-    for i, col in enumerate(y_test):
+    Y_pred = model.predict(X_test)
+    for i, col in enumerate(Y_test):
         print(col)
-        print(classification_report(y_test[col], y_pred[:, i]))
+        print(classification_report(Y_test[col], Y_pred[:, i]))
 
 
 def save_model(model, model_filepath):
     '''
     Save the model
-    Input: Model and the file path to save the model 
+    Input: Model and filepath to save the model 
     '''
     # save model as pickle file
     pickle.dump(model, open(model_filepath, 'wb'))
