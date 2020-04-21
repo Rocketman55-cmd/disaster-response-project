@@ -4,30 +4,54 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
-	messages = pd.read_csv(messages_filepath)
-	categories = pd.read_csv(categories_filepath)
-	df = pd.merge(messages, categories, on = 'id')
-	return df
+    ''' Load disaster messages and categories into dataframe.
+    Args:
+        messages_filepath: string. This is a csv file and contains the disaster messages.
+        categories_filepath: string. This is a csv file and contains the disaster categories for each message.
+    Returns:
+       dataframe
+    '''
+    # load data from csv files
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    # merge datasets
+    df = pd.merge(messages, categories, on = 'id')
+    return df
 
 def clean_data(df):
-	categories = df['categories'].str.split(';', expand=True)
-	row = categories[0:1]
-	category_colnames = row.applymap(lambda x: x[:-2]).iloc[0, :].tolist()
-	categories.columns = category_colnames
-	for column in categories:
-		categories[column] = categories[column].str[-1]
-		categories[column] = categories[column].astype(int)
-	categories = (categories > 0).astype(int)
-	df.drop('categories', axis=1, inplace=True)
-	df = pd.concat([df, categories], axis=1)
-	df.drop_duplicates(inplace=True)
-	return df
+    ''' Clean data.
+    Args:
+        df: dataFrame. It contains the disaster messages and categories.
+    Return:
+        dataFrame
+    '''
+    # create a dataframe of the 36 individual category columns
+    categories = df['categories'].str.split(';', expand = True)
+    row = categories[0:1]
+    category_colnames = row.applymap(lambda x: x[:-2]).iloc[0, :].tolist()
+    categories.columns = category_colnames
+    # loop through category columns
+    for column in categories:
+        categories[column] = categories[column].str[-1]
+        categories[column] = categories[column].astype(int)
+    categories = (categories > 0).astype(int)
+    # drop the original categories column from `df`
+    df.drop('categories', axis = 1, inplace = True)
+    df = pd.concat([df, categories], axis = 1)
+    # drop duplicates
+    df.drop_duplicates(inplace = True)
+    return df
 
 
 def save_data(df, database_filename):
-	engine = create_engine('sqlite:///' + database_filepath)
-	df.to_sql('messages_disaster', engine, index=False)
-	pass	
+    '''Save data into database.
+    Args:
+        df: pandas.DataFrame. It contains the disaster messages and categories that are cleaned.
+        database_filename: String. Dataframe is saved into this database file.
+    '''
+    engine = create_engine('sqlite:///' + database_filename)
+    df.to_sql('messages_disaster', engine, index = False)
+    pass	
 
 
 def main():
