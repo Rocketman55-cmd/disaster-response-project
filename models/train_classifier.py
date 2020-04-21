@@ -1,23 +1,102 @@
+# import libraries
 import sys
-
+import matplotlib.pyplot as plt
+import nltk
+nltk.download(['punkt', 'wordnet', 'stopwords'])
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import numpy as np
+import pandas as pd
+import pickle
+import re
+from sklearn.ensemble import RandomForestClassifier,AdaBoostClassifier
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.decomposition import TruncatedSVD
+from sqlalchemy import create_engine
 
 def load_data(database_filepath):
-    pass
+    '''
+    Load the database from the given filepath and process them as X, y and category_names
+    Input: Database filepath
+    Output: Returns the features X & target y along with target columns
+    '''
+    # load data from database
+    engine = create_engine(f'sqlite:///{database_filepath}')
+    df = pd.read_sql_table('messages_disaster', con = engine)
+    X = df['message']
+    y = df.drop(['message', 'genre', 'id', 'original'], axis = 1)
+    category_names = y.columns
+    return X, y, category_names
 
 
 def tokenize(text):
-    pass
+    '''
+    Tokenize the text messages
+    Input: text
+    output: Cleaned tokenized text as a list object
+    '''
+    # detect URLs
+    url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    detected_urls = re.findall(url_regex, text)
+    for url in detected_urls:
+        text = text.replace(url, 'urlplaceholder')
+    # tokenize
+    tokens = word_tokenize(text)
+    # lemmatize
+    lemmatizer = WordNetLemmatizer()
+    clean_tokens = []
+    for tok in tokens:
+        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tokens.append(clean_tok)
+    return clean_tokens
 
 
 def build_model():
-    pass
+    '''
+    Function to build a model, create pipeline, hypertuning as well as gridsearchcv
+    Output: Returns the model
+    '''
+    # set pipeline
+    pipeline = Pipeline([
+    ('vect', CountVectorizer(tokenizer=tokenize)),
+    ('tfidf', TfidfTransformer()),
+    ('clf', MultiOutputClassifier(RandomForestClassifier(class_weight = 'balanced')))
+    ])
+    # set parameters for grid search
+    parameters = parameters =  {'tfidf__use_idf': (True, False), 
+              'clf__estimator__n_estimators': [20, 50], 
+              'clf__estimator__min_samples_split': [2, 4]} 
+    # set grid search
+    cv = GridSearchCV(pipeline, param_grid = parameters)
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    '''
+    Function to evaluate a model and return the classificatio and accurancy score.
+    Inputs: Model, X_test, y_test, Catgegory_names
+    Outputs: Prints the Classification report & Accuracy Score
+    '''
+    # predict categories of messages
+    y_pred = model.predict(X_test)
+    for i, col in enumerate(y_test):
+        print(col)
+        print(classification_report(y_test[col], y_pred[:, i]))
 
 
 def save_model(model, model_filepath):
+    '''
+    Save the model
+    Input: Model and the file path to save the model 
+    '''
+    # save model as pickle file
+    pickle.dump(model, open(model_filepath, 'wb'))
     pass
 
 
