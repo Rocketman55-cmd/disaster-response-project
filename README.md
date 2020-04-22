@@ -32,7 +32,7 @@ Many files are used for this project.
 
 ## Results<a name="results"></a>
 
-The code and documentation can be found at this available [post](https://github.com/Rocketman55-cmd/disaster-response-project).
+The code and documentation can be found at this available GitHub [post](https://github.com/Rocketman55-cmd/disaster-response-project).
 
 An etl pipeline is created with a trained model and it is displayed on a web app. The process_data.py cleans the data and stores it in a sql database file. Then the sql database file is loaded into the train_classifier.py and a pipeline is created to categorize the disaster messages.
 The pipeline created then gets stored into a pickle file which then is used for the run.py. The run.py file displays three visualizations and the webpage can be used to classify messages. 
